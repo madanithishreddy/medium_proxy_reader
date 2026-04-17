@@ -50,6 +50,14 @@ class StorageService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeFromHistory(String url) async {
+    if (url.isEmpty) return;
+    if (!_history.remove(url)) return;
+
+    await _persistHistory();
+    notifyListeners();
+  }
+
   Future<void> toggleBookmark(String url) async {
     if (url.isEmpty) return;
 
@@ -58,6 +66,14 @@ class StorageService extends ChangeNotifier {
     } else {
       _bookmarks.add(url);
     }
+
+    await _persistBookmarks();
+    notifyListeners();
+  }
+
+  Future<void> removeBookmark(String url) async {
+    if (url.isEmpty) return;
+    if (!_bookmarks.remove(url)) return;
 
     await _persistBookmarks();
     notifyListeners();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'ArticleView.dart';
@@ -107,12 +108,27 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final storage = context.watch<StorageService>();
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDarkMode = themeProvider.themeMode == AppThemeMode.dark;
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Medium Proxy Reader'),
+          actions: [
+            IconButton(
+              tooltip: isDarkMode
+                  ? 'Switch to light mode'
+                  : 'Switch to dark mode',
+              onPressed: () {
+                context.read<ThemeProvider>().setThemeMode(
+                  isDarkMode ? AppThemeMode.light : AppThemeMode.dark,
+                );
+              },
+              icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.home_outlined), text: 'Home'),
@@ -132,12 +148,14 @@ class HomeScreen extends StatelessWidget {
               emptyText: 'No bookmarks yet. Save articles from the reader.',
               items: storage.bookmarks,
               canClear: false,
+              isBookmarkTab: true,
             ),
             _ArticleListTab(
               title: 'Reading History',
               emptyText: 'No reading history yet. Open a link to get started.',
               items: storage.history,
               canClear: true,
+              isBookmarkTab: false,
             ),
           ],
         ),
@@ -154,7 +172,6 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final gradient = isDark
         ? const [Color(0xFF13223A), Color(0xFF1E2E4A)]
@@ -180,7 +197,7 @@ class _HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Open any medium.com link and this app routes it through the mirror automatically.',
+                'Paste a Medium article URL and open it in the reader with the Freedium mirror.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -207,6 +224,8 @@ class _HomeTab extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
+        const _UrlComposerCard(),
+        const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -214,40 +233,191 @@ class _HomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Reader Theme',
+                  'How it works',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<AppThemeMode>(
-                  initialValue: themeProvider.themeMode,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (value) {
-                    if (value != null) {
-                      context.read<ThemeProvider>().setThemeMode(value);
-                    }
-                  },
-                  items: const [
-                    DropdownMenuItem(
-                      value: AppThemeMode.original,
-                      child: Text('Original'),
-                    ),
-                    DropdownMenuItem(
-                      value: AppThemeMode.light,
-                      child: Text('Light'),
-                    ),
-                    DropdownMenuItem(
-                      value: AppThemeMode.dark,
-                      child: Text('Dark'),
-                    ),
-                  ],
+                const SizedBox(height: 8),
+                Text(
+                  'The app redirects Medium links through the mirror, then keeps your bookmarks and reading history on-device.',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _UrlComposerCard extends StatefulWidget {
+  const _UrlComposerCard();
+
+  @override
+  State<_UrlComposerCard> createState() => _UrlComposerCardState();
+}
+
+class _UrlComposerCardState extends State<_UrlComposerCard> {
+  final TextEditingController _controller = TextEditingController();
+  final UrlTransformer _transformer = UrlTransformer();
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromClipboard();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _prefillFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final clipboardText = clipboardData?.text?.trim();
+      final normalized = clipboardText == null
+          ? null
+          : _transformer.normalizeForReader(clipboardText);
+
+      if (!mounted || normalized == null || normalized.isEmpty) {
+        return;
+      }
+
+      if (_controller.text.trim().isEmpty) {
+        _controller.text = normalized;
+      }
+    } catch (_) {
+      // Clipboard access can fail on some platforms or when unavailable.
+    }
+  }
+
+  void _openArticle([String? rawInput]) {
+    final input = (rawInput ?? _controller.text).trim();
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter or paste a Medium URL first.')),
+      );
+      return;
+    }
+
+    final normalized = _transformer.normalizeForReader(input);
+    if (normalized == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Use a Medium article URL or a Freedium link.'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ArticleView(mediumUrl: normalized)),
+    );
+  }
+
+  void _loadRecentUrl(String url) {
+    _controller.text = url;
+    _openArticle(url);
+  }
+
+  String _recentLabel(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return url;
+
+    final lastSegment = uri.pathSegments.lastOrNull;
+    if (lastSegment == null || lastSegment.isEmpty) {
+      return uri.host;
+    }
+
+    return lastSegment.replaceAll('-', ' ').replaceAll('_', ' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final storage = context.watch<StorageService>();
+    final recentUrls = storage.history.take(5).toList(growable: false);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter Medium URL',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.go,
+              onSubmitted: (_) => _openArticle(),
+              decoration: const InputDecoration(
+                hintText: 'Paste any Medium URL here',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: _openArticle,
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.maybeOf(context);
+                    await _prefillFromClipboard();
+
+                    if (_controller.text.trim().isEmpty) {
+                      messenger?.showSnackBar(
+                        const SnackBar(
+                          content: Text('No Medium URL found in clipboard.'),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.paste),
+                  label: const Text('Paste'),
+                ),
+                if (recentUrls.isNotEmpty)
+                  PopupMenuButton<String>(
+                    tooltip: 'Recent URLs',
+                    onSelected: _loadRecentUrl,
+                    itemBuilder: (context) => recentUrls
+                        .map(
+                          (url) => PopupMenuItem<String>(
+                            value: url,
+                            child: Text(
+                              _recentLabel(url),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                    child: const Chip(
+                      avatar: Icon(Icons.history, size: 18),
+                      label: Text('Recent'),
+                    ),
+                  )
+                else
+                  const Chip(
+                    avatar: Icon(Icons.history, size: 18),
+                    label: Text('Recent'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -294,12 +464,14 @@ class _ArticleListTab extends StatelessWidget {
     required this.emptyText,
     required this.items,
     required this.canClear,
+    required this.isBookmarkTab,
   });
 
   final String title;
   final String emptyText;
   final List<String> items;
   final bool canClear;
+  final bool isBookmarkTab;
 
   @override
   Widget build(BuildContext context) {
@@ -341,33 +513,65 @@ class _ArticleListTab extends StatelessWidget {
                       const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = items[index];
+                    final itemKey = ValueKey('$title-$item');
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
+                    return Dismissible(
+                      key: itemKey,
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        child: Icon(
+                          Icons.delete_outline,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
                       ),
-                      title: Text(
-                        Uri.tryParse(item)?.pathSegments.lastOrNull
-                                ?.replaceAll('-', ' ')
-                                .replaceAll('_', ' ') ??
-                            item,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        item,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const Icon(Icons.open_in_new),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ArticleView(mediumUrl: item),
+                      onDismissed: (_) {
+                        final storage = context.read<StorageService>();
+                        if (isBookmarkTab) {
+                          storage.removeBookmark(item);
+                        } else {
+                          storage.removeFromHistory(item);
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isBookmarkTab
+                                  ? 'Bookmark removed'
+                                  : 'History item removed',
+                            ),
                           ),
                         );
                       },
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        title: Text(
+                          Uri.tryParse(item)?.pathSegments.lastOrNull
+                                  ?.replaceAll('-', ' ')
+                                  .replaceAll('_', ' ') ??
+                              item,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          item,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.open_in_new),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ArticleView(mediumUrl: item),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
