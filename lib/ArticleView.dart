@@ -266,49 +266,7 @@ class _ArticleViewState extends State<ArticleView> {
       text-decoration-thickness: 0.08em !important;
     }
 
-    code, pre, blockquote {
-      background: $surfaceColor !important;
-      color: $foregroundColor !important;
-      border: 1px solid $borderColor !important;
-      border-radius: 12px !important;
-    }
-
-    p code, li code, blockquote code,
-    .markup--code, .graf--code,
-    [class*="markup--code"], [class*="graf--code"] {
-      background: #EEF2F7 !important;
-      color: $foregroundColor !important;
-      border: 1px solid $borderColor !important;
-      border-radius: 8px !important;
-      padding: 0.06em 0.38em !important;
-      box-shadow: none !important;
-    }
-
-    .markup--code::before, .markup--code::after,
-    .graf--code::before, .graf--code::after,
-    [class*="markup--code"]::before, [class*="markup--code"]::after,
-    [class*="graf--code"]::before, [class*="graf--code"]::after,
-    p code::before, p code::after,
-    li code::before, li code::after {
-      content: none !important;
-      display: none !important;
-      background: transparent !important;
-      color: inherit !important;
-      box-shadow: none !important;
-    }
-
-    pre code, code, pre *, code *,
-    pre span, code span,
-    [class*="hljs"], [class*="hljs"] *,
-    [class*="highlight"], [class*="highlight"] * {
-      background: $surfaceColor !important;
-      color: $foregroundColor !important;
-      -webkit-text-fill-color: $foregroundColor !important;
-      text-shadow: none !important;
-      mix-blend-mode: normal !important;
-    }
-
-    pre, blockquote {
+    blockquote {
       padding: 0.9em 1em !important;
       overflow-x: auto !important;
     }
@@ -392,50 +350,6 @@ class _ArticleViewState extends State<ArticleView> {
 
   document.querySelectorAll('a').forEach((element) => {
     element.style.color = linkColor;
-  });
-
-  document.querySelectorAll('code, pre, blockquote').forEach((element) => {
-    element.style.backgroundColor = surfaceColor;
-    element.style.color = foregroundColor;
-    element.style.borderColor = borderColor;
-  });
-
-  document.querySelectorAll('p code, li code, .markup--code, .graf--code, [class*="markup--code"], [class*="graf--code"]').forEach((element) => {
-    if (!(element instanceof HTMLElement)) return;
-    element.style.setProperty('background-color', '#EEF2F7', 'important');
-    element.style.setProperty('color', foregroundColor, 'important');
-    element.style.setProperty('-webkit-text-fill-color', foregroundColor, 'important');
-    element.style.setProperty('border-color', borderColor, 'important');
-    element.style.setProperty('opacity', '1', 'important');
-  });
-
-  // Some Medium/Freedium pages set inline fragments to black background with
-  // transparent/dark text. Normalize those fragments for readability.
-  const readabilityTargets = document.querySelectorAll(
-    'code, pre, kbd, samp, mark, [class*="hljs"], [class*="highlight"], [style*="background"], [style*="color"]'
-  );
-
-  readabilityTargets.forEach((element) => {
-    if (!(element instanceof HTMLElement)) return;
-
-    const style = window.getComputedStyle(element);
-    if (!style) return;
-
-    const bg = style.backgroundColor || '';
-    const fg = style.color || '';
-    const isDarkBg = /rgba?\(\s*0\s*,\s*0\s*,\s*0(?:\s*,\s*(0\.[0-9]+|1))?\s*\)|rgb\(\s*[0-4]?\d\s*,\s*[0-4]?\d\s*,\s*[0-4]?\d\s*\)/i.test(bg);
-    const isHiddenFg = /rgba?\(\s*0\s*,\s*0\s*,\s*0(?:\s*,\s*(0\.[0-9]+|1))?\s*\)|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0\s*\)|transparent/i.test(fg);
-
-    if (isDarkBg || isHiddenFg) {
-      element.style.setProperty('background-color', surfaceColor, 'important');
-      element.style.setProperty('color', foregroundColor, 'important');
-      element.style.setProperty('-webkit-text-fill-color', foregroundColor, 'important');
-      element.style.setProperty('opacity', '1', 'important');
-      element.style.setProperty('filter', 'none', 'important');
-      element.style.setProperty('mix-blend-mode', 'normal', 'important');
-      element.style.setProperty('text-shadow', 'none', 'important');
-      element.style.setProperty('visibility', 'visible', 'important');
-    }
   });
 
   const originalLink = Array.from(document.querySelectorAll('a[href]')).find((element) => {
