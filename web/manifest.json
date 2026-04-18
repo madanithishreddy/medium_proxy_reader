@@ -1,11 +1,11 @@
 {
-    "name": "medium_proxy_reader",
-    "short_name": "medium_proxy_reader",
+    "name": "Medium Mirror Reader",
+    "short_name": "Medium Mirror",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B1220",
+    "theme_color": "#2457D6",
+    "description": "Read Medium articles in a clean mirror reader.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

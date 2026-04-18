@@ -35,7 +35,7 @@ class MediumProxyReaderApp extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
-      title: 'Medium Proxy Reader',
+      title: 'Medium Mirror Reader',
       themeMode: themeProvider.materialThemeMode,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
@@ -115,7 +115,7 @@ class HomeScreen extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Medium Proxy Reader'),
+          title: const Text('Medium Mirror Reader'),
           actions: [
             IconButton(
               tooltip: isDarkMode

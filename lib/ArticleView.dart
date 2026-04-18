@@ -91,9 +91,21 @@ class _ArticleViewState extends State<ArticleView> {
 
             final host = uri.host.toLowerCase();
             final isMirror = host == 'freedium-mirror.cfd';
-            final isMedium = host == 'medium.com' || host == 'www.medium.com';
+            final isMedium =
+                host == 'medium.com' ||
+                host == 'www.medium.com' ||
+                host.endsWith('.medium.com');
 
-            if (isMirror || isMedium) {
+            if (isMirror) {
+              return NavigationDecision.navigate;
+            }
+
+            if (isMedium) {
+              final mirrorUrl = _transformer.toMirrorUrl(request.url);
+              if (mirrorUrl != null) {
+                unawaited(_controller.loadRequest(Uri.parse(mirrorUrl)));
+                return NavigationDecision.prevent;
+              }
               return NavigationDecision.navigate;
             }
 
@@ -483,7 +495,7 @@ class _ArticleViewState extends State<ArticleView> {
     return Scaffold(
       backgroundColor: scaffoldBackground,
       appBar: AppBar(
-        title: const Text('Medium Proxy Reader'),
+        title: const Text('Medium Mirror Reader'),
         actions: [
           IconButton(
             onPressed: _mirrorUrl.isEmpty ? null : _shareMirrorUrl,

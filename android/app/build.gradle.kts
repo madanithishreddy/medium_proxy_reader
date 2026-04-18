@@ -42,3 +42,14 @@ android {
 flutter {
     source = "../.."
 }
+
+android.applicationVariants.all {
+    outputs.all {
+        @Suppress("UNCHECKED_CAST")
+        val output =
+            this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+        val readableVersion = versionName ?: "1.0.0"
+        output.outputFileName =
+            "medium-mirror-reader-v${readableVersion}-${buildType.name}.apk"
+    }
+}
