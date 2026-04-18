@@ -1,4 +1,4 @@
-package com.example.medium_proxy_reader
+package com.nithish.mediumproxyreader
 
 import io.flutter.embedding.android.FlutterActivity
 

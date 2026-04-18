@@ -64,7 +64,7 @@ class UrlTransformer {
   }
 
   Uri? _extractUri(String input) {
-    final trimmed = input.trim();
+    final trimmed = _sanitizeInput(input);
     if (trimmed.isEmpty) return null;
 
     final directUri = Uri.tryParse(trimmed);
@@ -79,7 +79,7 @@ class UrlTransformer {
     }
 
     final urlMatch = RegExp(
-      r'https?:\/\/[^\s<>"]+',
+      r'''https?:\/\/[^\s<>"']+''',
       caseSensitive: false,
     ).firstMatch(trimmed);
     if (urlMatch != null) {
@@ -91,6 +91,26 @@ class UrlTransformer {
     }
 
     return null;
+  }
+
+  String _sanitizeInput(String input) {
+    var text = input.trim();
+    if (text.isEmpty) return text;
+
+    // Remove simple wrapping quotes users often paste with links.
+    if (text.length >= 2) {
+      final first = text[0];
+      final last = text[text.length - 1];
+      final wrappedInQuotes =
+          (first == '"' && last == '"') || (first == "'" && last == "'");
+      if (wrappedInQuotes) {
+        text = text.substring(1, text.length - 1).trim();
+      }
+    }
+
+    // Convert encoded ampersands commonly found in copied newsletter links.
+    text = text.replaceAll('&amp;', '&');
+    return text;
   }
 
   bool _looksLikeUrlHost(String input) {
@@ -106,8 +126,10 @@ class UrlTransformer {
       scheme: 'https',
       host: _mediumHost,
       path: path,
-      query: uri.query.isEmpty ? null : uri.query,
-      fragment: uri.fragment.isEmpty ? null : uri.fragment,
+      // Mirror routing is path-based; dropping newsletter/tracking params
+      // improves compatibility with copied email links.
+      query: null,
+      fragment: null,
     );
 
     return canonicalUri.toString();

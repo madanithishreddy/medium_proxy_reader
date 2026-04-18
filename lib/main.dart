@@ -14,7 +14,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final storageService = StorageService();
-  await storageService.initialize();
 
   runApp(
     MultiProvider(
@@ -25,6 +24,9 @@ Future<void> main() async {
       child: const MediumProxyReaderApp(),
     ),
   );
+
+  // Load persisted data after first frame setup to reduce cold-start latency.
+  unawaited(storageService.initialize());
 }
 
 class MediumProxyReaderApp extends StatelessWidget {

@@ -12,12 +12,14 @@ class StorageService extends ChangeNotifier {
 
   final List<String> _history = <String>[];
   final Set<String> _bookmarks = <String>{};
+  SharedPreferences? _prefs;
 
   List<String> get history => List<String>.unmodifiable(_history);
   List<String> get bookmarks => List<String>.unmodifiable(_bookmarks.toList());
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    _prefs = prefs;
 
     _history
       ..clear()
@@ -82,12 +84,14 @@ class StorageService extends ChangeNotifier {
   bool isBookmarked(String url) => _bookmarks.contains(url);
 
   Future<void> _persistHistory() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    _prefs = prefs;
     await prefs.setString(_historyKey, jsonEncode(_history));
   }
 
   Future<void> _persistBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    _prefs = prefs;
     await prefs.setString(_bookmarksKey, jsonEncode(_bookmarks.toList()));
   }
 
