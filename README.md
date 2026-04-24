@@ -13,6 +13,13 @@ The app supports direct paste, deep links, bookmarks, and reading history, while
 - Light and dark theme toggle.
 - Share mirror links directly from the reader.
 
+## Screenshots
+
+<p align="center">
+	<img src="assets/screenshots/home-screen.jpg" alt="Home Screen" width="49%" />
+	<img src="assets/screenshots/reader-screen.jpg" alt="Reader Screen" width="49%" />
+</p>
+
 ## Tech Stack
 
 - Flutter
@@ -91,22 +98,3 @@ flutter build ios --release
 - Bookmarks and history are saved only on the local device.
 - Do not commit signing keys or credentials.
 - Keep platform signing files private (see .gitignore).
-
-## Upload This Project to GitHub
-
-Run these commands from the project root:
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: Medium Mirror Reader"
-git branch -M main
-git remote add origin https://github.com/<your-username>/medium_proxy_reader.git
-git push -u origin main
-```
-
-If the repository already exists locally, skip git init and just set/verify remote + push.
-
-## License
-
-Add a LICENSE file before publishing if you want open-source usage terms.
