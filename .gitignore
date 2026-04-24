@@ -3,6 +3,7 @@
 *.log
 *.pyc
 *.swp
+*.tmp
 .DS_Store
 .atom/
 .build/
@@ -23,13 +24,19 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+# Common local environment files
+.env
+.env.*
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
+.flutter-plugins
 .pub-cache/
 .pub/
+.packages
 /build/
 /coverage/
 
@@ -43,6 +50,18 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/local.properties
 
 # Android release signing secrets
 /android/key.properties
+*.jks
+*.keystore
+
+# iOS build/generated files
+/ios/Flutter/ephemeral/
+/ios/Flutter/flutter_export_environment.sh
+
+# macOS/Linux/Windows generated plugin registrants can be regenerated
+/linux/flutter/generated_plugin_registrant.*
+/macos/Flutter/GeneratedPluginRegistrant.swift
+/windows/flutter/generated_plugin_registrant.*
